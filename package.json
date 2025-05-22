@@ -1,6 +1,6 @@
 {
   "name": "use-markdown-toc",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "A React hook for generating a table of contents from a markdown file",
   "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
   "license": "MIT",

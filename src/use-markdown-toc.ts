@@ -58,20 +58,28 @@ export const useMarkdownToc = ({
 }: UseMarkdownTocProps) => {
   const [headings, setHeadings] = React.useState<MarkdownTocHeadings>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const observerRef = React.useRef<IntersectionObserver | null>(null);
 
+  // Handle hash changes
   React.useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash) {
-        setActiveId(window.location.hash.replace('#', ''));
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        setActiveId(hash);
+        // Scroll the heading into view if it exists
+        // const element = document.getElementById(hash);
+        // if (element) {
+        //   element.scrollIntoView({ behavior: 'smooth' });
+        // }
       }
     };
 
     handleHashChange();
-
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Handle headings and intersection observer
   React.useEffect(() => {
     const container = containerId && document.getElementById(containerId);
     if (!container) {
@@ -83,9 +91,6 @@ export const useMarkdownToc = ({
       container.querySelectorAll(selectors),
     ).filter((heading) => Boolean(heading.textContent)) as HTMLElement[];
 
-    /**
-     * Filter duplicate IDs
-     */
     const processedIds = new Set<string>();
     const toc = headingElements
       .filter((heading) => {
@@ -103,23 +108,37 @@ export const useMarkdownToc = ({
 
     setHeadings(toc);
 
+    // Cleanup previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Create new observer
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
-        });
+        // Find the first intersecting heading
+        const intersectingEntry = entries.find((entry) => entry.isIntersecting);
+        if (intersectingEntry) {
+          setActiveId(intersectingEntry.target.id);
+        }
       },
-      { root: null, rootMargin, threshold },
+      {
+        root: null,
+        rootMargin,
+        threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+      },
     );
 
+    observerRef.current = observer;
     headingElements.forEach((element) => observer.observe(element));
 
     return () => {
-      headingElements.forEach((element) => observer.unobserve(element));
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
     };
-  }, [containerId, rootMargin, threshold, selectors]);
+  }, [containerId, rootMargin, selectors]);
 
   return [headings, activeId] as [MarkdownTocHeadings, string | null];
 };
