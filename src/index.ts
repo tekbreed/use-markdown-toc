@@ -1,1 +1,1 @@
-import { sayHello } from './test.js';
+export * from './use-toc';
