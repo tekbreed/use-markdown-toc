@@ -13,13 +13,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
-    "module": "NodeNext",
-    "outDir": "dist",
-    "rootDir": "src",
-    "sourceMap": true,
-
-    "declaration": true
-
-    // "declarationMap": true
+    "module": "Preserve",
+    "noEmit": true
   }
 }

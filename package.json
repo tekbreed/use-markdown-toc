@@ -2,11 +2,15 @@
   "name": "use-toc",
   "version": "1.0.0",
   "description": "A React hook for generating a table of contents from a markdown file",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
+    "lint": "tsc",
     "format": "prettier --write .",
-    "ci": "npm run build && npm run format"
+    "format:check": "prettier --check .",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "test": "vitest run",
+    "ci": "npm run build && npm run format:check && npm run check-exports && npm run lint && npm run test"
   },
   "repository": {
     "type": "git",
@@ -14,7 +18,7 @@
   },
   "keywords": [
     "react",
-    "hook",
+    "hooks",
     "table of contents",
     "markdown",
     "toc"
@@ -29,8 +33,18 @@
     "dist"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.1",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.3"
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
   }
 }
