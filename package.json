@@ -1,5 +1,5 @@
 {
-  "name": "use-toc",
+  "name": "use-markdown-toc",
   "version": "1.0.0",
   "description": "A React hook for generating a table of contents from a markdown file",
   "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
@@ -18,11 +18,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/christophersesugh/use-toc.git"
+    "url": "git+https://github.com/christophersesugh/use-markdown-toc.git"
   },
-  "homepage": "https://github.com/christophersesugh/use-toc#readme",
+  "homepage": "https://github.com/christophersesugh/use-markdown-toc#readme",
   "bugs": {
-    "url": "https://github.com/christophersesugh/use-toc/issues"
+    "url": "https://github.com/christophersesugh/use-markdown-toc/issues"
   },
   "keywords": [
     "react",
