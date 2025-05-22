@@ -1,27 +1,27 @@
 import * as React from 'react';
 
-export interface TOCItem {
+export interface MarkdownTocItem {
   id: string;
   level: number;
   text: string;
 }
 
-export type TOCHeadings = TOCItem[];
+export type MarkdownTocHeadings = MarkdownTocItem[];
 
-export interface UseTOCProps {
+export interface UseMarkdownTocProps {
   containerId: string;
   selectors?: string;
   rootMargin?: string;
   threshold?: number;
 }
 
-export const useToc = ({
+export const useMarkdownToc = ({
   containerId = 'markdown-content',
   selectors = 'h1, h2, h3, h4, h5, h6',
   rootMargin = '0px 0px -80% 0px',
   threshold = 0.1,
-}: UseTOCProps) => {
-  const [headings, setHeadings] = React.useState<TOCHeadings>([]);
+}: UseMarkdownTocProps) => {
+  const [headings, setHeadings] = React.useState<MarkdownTocHeadings>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -48,11 +48,23 @@ export const useToc = ({
       container.querySelectorAll(selectors),
     ).filter((heading) => Boolean(heading.textContent)) as HTMLElement[];
 
-    const toc = headingElements.map((heading) => ({
-      id: heading.id,
-      level: parseInt(heading.tagName.substring(1)),
-      text: heading.textContent!,
-    }));
+    /**
+     * Remove duplicate IDs
+     */
+    const processedIds = new Set<string>();
+    const toc = headingElements
+      .filter((heading) => {
+        if (processedIds.has(heading.id)) {
+          return false;
+        }
+        processedIds.add(heading.id);
+        return true;
+      })
+      .map((heading) => ({
+        id: heading.id,
+        level: parseInt(heading.tagName.substring(1)),
+        text: heading.textContent!,
+      }));
 
     setHeadings(toc);
 
@@ -74,5 +86,5 @@ export const useToc = ({
     };
   }, [containerId, rootMargin, threshold, selectors]);
 
-  return [headings, activeId] as [TOCHeadings, string | null];
+  return [headings, activeId] as [MarkdownTocHeadings, string | null];
 };
