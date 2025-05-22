@@ -1,6 +1,6 @@
 {
   "name": "use-markdown-toc",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A React hook for generating a table of contents from a markdown file",
   "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
   "license": "MIT",
@@ -35,8 +35,8 @@
     "build": "tsup",
     "test": "vitest run",
     "lint": "tsc",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write ./src",
+    "format:check": "prettier --check ./src",
     "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
     "ci": "npm run build && npm run format:check && npm run check-exports && npm run lint && npm run test",
     "prepublishOnly": "npm run ci",
