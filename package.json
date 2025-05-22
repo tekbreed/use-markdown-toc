@@ -1,20 +1,36 @@
 {
   "name": "use-toc",
   "version": "1.0.0",
+  "description": "A React hook for generating a table of contents from a markdown file",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "format": "prettier --write .",
+    "ci": "npm run build && npm run format"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/christophersesugh/use-toc.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "react",
+    "hook",
+    "table of contents",
+    "markdown",
+    "toc"
+  ],
+  "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/christophersesugh/use-toc/issues"
   },
   "homepage": "https://github.com/christophersesugh/use-toc#readme",
-  "description": ""
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
+  }
 }
