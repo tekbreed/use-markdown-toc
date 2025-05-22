@@ -2,19 +2,27 @@
   "name": "use-toc",
   "version": "1.0.0",
   "description": "A React hook for generating a table of contents from a markdown file",
+  "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
+  "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
-  "scripts": {
-    "build": "tsup",
-    "lint": "tsc",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
-    "test": "vitest run",
-    "ci": "npm run build && npm run format:check && npm run check-exports && npm run lint && npm run test"
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/christophersesugh/use-toc.git"
+  },
+  "homepage": "https://github.com/christophersesugh/use-toc#readme",
+  "bugs": {
+    "url": "https://github.com/christophersesugh/use-toc/issues"
   },
   "keywords": [
     "react",
@@ -23,22 +31,14 @@
     "markdown",
     "toc"
   ],
-  "author": "Christopher Sesugh Aondona <christohybrid185@gmail.com> (https://codingsimba.com)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/christophersesugh/use-toc/issues"
-  },
-  "homepage": "https://github.com/christophersesugh/use-toc#readme",
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "import": "./dist/index.js",
-      "default": "./dist/index.cjs"
-    }
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "tsc",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check-exports": "attw --pack . --ignore-rules=cjs-resolves-to-esm",
+    "ci": "npm run build && npm run format:check && npm run check-exports && npm run lint && npm run test"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.1",
