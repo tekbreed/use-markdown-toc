@@ -56,8 +56,18 @@ export const useMarkdownToc = ({
   rootMargin = '0px 0px -80% 0px',
   threshold = 0.1,
 }: UseMarkdownTocProps) => {
+  // Handle SSR
+  if (typeof window === 'undefined') {
+    return [[], null] as [MarkdownTocHeadings, string | null];
+  }
+
   const [headings, setHeadings] = React.useState<MarkdownTocHeadings>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+
+  // Reset activeId when container changes
+  React.useEffect(() => {
+    setActiveId(null);
+  }, [containerId]);
 
   React.useEffect(() => {
     const handleHashChange = () => {
@@ -73,52 +83,70 @@ export const useMarkdownToc = ({
   }, []);
 
   React.useEffect(() => {
-    const container = containerId && document.getElementById(containerId);
-    if (!container) {
-      console.warn(`Container with id "${containerId}" not found.`);
-      return;
-    }
+    try {
+      const container = containerId && document.getElementById(containerId);
+      if (!container) {
+        console.warn(`Container with id "${containerId}" not found.`);
+        return;
+      }
 
-    const headingElements = Array.from(
-      container.querySelectorAll(selectors),
-    ).filter((heading) => Boolean(heading.textContent)) as HTMLElement[];
+      // Optimize heading elements query with type guard
+      const headingElements = Array.from(
+        container.querySelectorAll(selectors),
+      ).filter((heading): heading is HTMLElement =>
+        Boolean(heading.textContent),
+      );
 
-    /**
-     * Filter duplicate IDs
-     */
-    const processedIds = new Set<string>();
-    const toc = headingElements
-      .filter((heading) => {
-        if (processedIds.has(heading.id)) {
-          return false;
-        }
-        processedIds.add(heading.id);
-        return true;
-      })
-      .map((heading) => ({
-        id: heading.id,
-        level: parseInt(heading.tagName.substring(1)),
-        text: heading.textContent!,
-      }));
+      // Filter duplicate IDs and process headings
+      const processedIds = new Set<string>();
+      const toc = headingElements
+        .filter((heading) => {
+          if (processedIds.has(heading.id)) {
+            return false;
+          }
+          processedIds.add(heading.id);
+          return true;
+        })
+        .map((heading) => ({
+          id: heading.id,
+          // Ensure heading level is between 1 and 6
+          level: Math.min(
+            Math.max(parseInt(heading.tagName.substring(1)), 1),
+            6,
+          ),
+          // Handle potential null text content
+          text: heading.textContent || '',
+        }));
 
-    setHeadings(toc);
+      setHeadings(toc);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
+      // Create observer with proper type
+      const options: IntersectionObserverInit = {
+        root: null,
+        rootMargin,
+        threshold,
+      };
+
+      const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setActiveId(entry.target.id);
           }
         });
-      },
-      { root: null, rootMargin, threshold },
-    );
+      }, options);
 
-    headingElements.forEach((element) => observer.observe(element));
+      headingElements.forEach((element) => observer.observe(element));
 
-    return () => {
-      headingElements.forEach((element) => observer.unobserve(element));
-    };
+      return () => {
+        observer.disconnect();
+        headingElements.forEach((element) => observer.unobserve(element));
+      };
+    } catch (error) {
+      console.error('Error in useMarkdownToc:', error);
+      setHeadings([]);
+      setActiveId(null);
+      return;
+    }
   }, [containerId, rootMargin, threshold, selectors]);
 
   return [headings, activeId] as [MarkdownTocHeadings, string | null];
