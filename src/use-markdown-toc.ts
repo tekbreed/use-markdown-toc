@@ -1,354 +1,353 @@
-// import * as React from 'react';
-
-// /**
-//  * Represents a single heading item in the table of contents.
-//  */
-// export interface MarkdownTocItem {
-//   /** Unique identifier for the heading */
-//   id: string;
-//   /** Heading level (1-6) */
-//   level: number;
-//   /** Text content of the heading */
-//   text: string;
-// }
-
-// /** Array of table of contents items */
-// export type MarkdownTocHeadings = MarkdownTocItem[];
-
-// /**
-//  * Configuration options for the useMarkdownToc hook.
-//  */
-// export interface UseMarkdownTocProps {
-//   /** ID of the container element containing the markdown content */
-//   containerId: string;
-//   /** CSS selector for heading elements (default: 'h1, h2, h3, h4, h5, h6') */
-//   selectors?: string;
-//   /** Root margin for the Intersection Observer (default: '0px 0px -80% 0px') */
-//   rootMargin?: string;
-//   /** Threshold for the Intersection Observer (default: 0.1) */
-//   threshold?: number;
-// }
-
-// /**
-//  * A React hook that generates a table of contents from markdown headings.
-//  *
-//  * @example
-//  * ```tsx
-//  * const [headings, activeId] = useMarkdownToc({
-//  *   containerId: 'markdown-content',
-//  *   selectors: 'h1, h2, h3'
-//  * });
-//  * ```
-//  *
-//  * @param props - Configuration options
-//  * @param props.containerId - ID of the container element
-//  * @param props.selectors - CSS selector for headings (default: 'h1, h2, h3, h4, h5, h6')
-//  * @param props.rootMargin - Intersection Observer root margin (default: '0px 0px -80% 0px')
-//  * @param props.threshold - Intersection Observer threshold (default: 0.1)
-//  *
-//  * @returns A tuple containing:
-//  * - headings: Array of heading items with id, level, and text
-//  * - activeId: ID of the currently active heading (based on scroll position and hash)
-//  */
-// export const useMarkdownToc = ({
-//   containerId = 'markdown-content',
-//   selectors = 'h1, h2, h3, h4, h5, h6',
-//   rootMargin = '0px 0px -80% 0px',
-//   threshold = 0.1,
-// }: UseMarkdownTocProps) => {
-//   const [headings, setHeadings] = React.useState<MarkdownTocHeadings>([]);
-//   const [activeId, setActiveId] = React.useState<string | null>(null);
-//   const observerRef = React.useRef<IntersectionObserver | null>(null);
-
-//   // Handle hash changes
-//   React.useEffect(() => {
-//     const handleHashChange = () => {
-//       const hash = window.location.hash.replace('#', '');
-//       if (hash) {
-//         setActiveId(hash);
-//         // Scroll the heading into view if it exists
-//         // const element = document.getElementById(hash);
-//         // if (element) {
-//         //   element.scrollIntoView({ behavior: 'smooth' });
-//         // }
-//       }
-//     };
-
-//     handleHashChange();
-//     window.addEventListener('hashchange', handleHashChange);
-//     return () => window.removeEventListener('hashchange', handleHashChange);
-//   }, []);
-
-//   // Handle headings and intersection observer
-//   React.useEffect(() => {
-//     const container = containerId && document.getElementById(containerId);
-//     if (!container) {
-//       console.warn(`Container with id "${containerId}" not found.`);
-//       return;
-//     }
-
-//     const headingElements = Array.from(
-//       container.querySelectorAll(selectors),
-//     ).filter((heading) => Boolean(heading.textContent)) as HTMLElement[];
-
-//     const processedIds = new Set<string>();
-//     const toc = headingElements
-//       .filter((heading) => {
-//         if (processedIds.has(heading.id)) {
-//           return false;
-//         }
-//         processedIds.add(heading.id);
-//         return true;
-//       })
-//       .map((heading) => ({
-//         id: heading.id,
-//         level: parseInt(heading.tagName.substring(1)),
-//         text: heading.textContent!,
-//       }));
-
-//     setHeadings(toc);
-
-//     // Cleanup previous observer
-//     if (observerRef.current) {
-//       observerRef.current.disconnect();
-//     }
-
-//     // Create new observer
-//     const observer = new IntersectionObserver(
-//       (entries) => {
-//         // Find the first intersecting heading
-//         const intersectingEntry = entries.find((entry) => entry.isIntersecting);
-//         if (intersectingEntry) {
-//           setActiveId(intersectingEntry.target.id);
-//         }
-//       },
-//       {
-//         root: null,
-//         rootMargin,
-//         threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-//       },
-//     );
-
-//     observerRef.current = observer;
-//     headingElements.forEach((element) => observer.observe(element));
-
-//     return () => {
-//       if (observerRef.current) {
-//         observerRef.current.disconnect();
-//         observerRef.current = null;
-//       }
-//     };
-//   }, [containerId, rootMargin, selectors]);
-
-//   return [headings, activeId] as [MarkdownTocHeadings, string | null];
-// };
-
 import * as React from 'react';
+import type {
+  TOCHeadings,
+  UseMarkdownTocProps,
+  UseMarkdownTocReturn,
+} from './types';
+import { defaultIdGenerator } from './utils/slug';
+import { useDebounce } from './hooks/useDebounce';
+import { useStableCallback } from './hooks/useStableCallback';
 
 /**
- * Represents a single heading item in the table of contents.
- */
-export interface MarkdownTocItem {
-  /** Unique identifier for the heading */
-  id: string;
-  /** Heading level (1-6) */
-  level: number;
-  /** Text content of the heading */
-  text: string;
-}
-
-/** Array of table of contents items */
-export type MarkdownTocHeadings = MarkdownTocItem[];
-
-/**
- * Configuration options for the useMarkdownToc hook.
- */
-export interface UseMarkdownTocProps {
-  /** ID of the container element containing the markdown content */
-  containerId: string;
-  /** CSS selector for heading elements (default: 'h1, h2, h3, h4, h5, h6') */
-  selectors?: string;
-  /** Root margin for the Intersection Observer (default: '0px 0px -80% 0px') */
-  rootMargin?: string;
-  /** Threshold for the Intersection Observer (default: 0.1) */
-  threshold?: number;
-  /** Auto-generate IDs for headings that don't have them */
-  autoGenerateIds?: boolean;
-}
-
-/**
- * Generate a slug from text content
- */
-const generateSlug = (text: string): string => {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
-    .trim();
-};
-
-/**
- * Return type for the useMarkdownToc hook
- */
-export type UseMarkdownTocReturn = readonly [
-  headings: MarkdownTocHeadings,
-  activeId: string | null,
-];
-
-/**
- * A React hook that generates a table of contents from markdown headings.
+ * Custom hook for creating an interactive table of contents
+ *
+ * This hook provides a complete solution for creating dynamic table of contents
+ * that automatically detects headings, tracks the currently visible section,
+ * and provides navigation functionality.
+ *
+ * @param options - Configuration options for the hook
+ * @returns Object containing headings, active state, and utility functions
  */
 export const useMarkdownToc = ({
   containerId = 'markdown-content',
   selectors = 'h1, h2, h3, h4, h5, h6',
   rootMargin = '0px 0px -80% 0px',
   threshold = 0.1,
-  autoGenerateIds = true,
-}: UseMarkdownTocProps): UseMarkdownTocReturn => {
-  const [headings, setHeadings] = React.useState<MarkdownTocHeadings>([]);
+  debounceDelay = 100,
+  generateIds = true,
+  idGenerator = defaultIdGenerator,
+  enableErrorHandling = true,
+  onError,
+}: UseMarkdownTocProps = {}): UseMarkdownTocReturn => {
+  // State management
+  const [headings, setHeadings] = React.useState<TOCHeadings>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [internalActiveId, setInternalActiveId] = React.useState<string | null>(
+    null,
+  );
+
+  // Refs for cleanup and state management
   const observerRef = React.useRef<IntersectionObserver | null>(null);
   const headingElementsRef = React.useRef<HTMLElement[]>([]);
+  const mountedRef = React.useRef(true);
+  const lastActiveIdRef = React.useRef<string | null>(null);
 
-  // Handle hash changes
-  React.useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash) {
-        setActiveId(hash);
-      }
-    };
+  // Debounced active ID to prevent rapid state changes
+  const debouncedActiveId = useDebounce(internalActiveId, debounceDelay);
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  /**
+   * Error handler that manages error state and calls custom error handlers
+   */
+  const handleError = useStableCallback((err: Error, context: string) => {
+    if (!enableErrorHandling) return;
 
-  // Handle headings and intersection observer
-  React.useEffect(() => {
-    const container = containerId && document.getElementById(containerId);
-    if (!container) {
-      console.warn(`Container with id "${containerId}" not found.`);
-      return;
+    const errorMessage = `useMarkdownToc Error in ${context}: ${err.message}`;
+    setError(errorMessage);
+
+    if (onError) {
+      onError(err, context);
+    } else {
+      console.error(errorMessage, err);
     }
+  });
 
-    const headingElements = Array.from(
-      container.querySelectorAll(selectors),
-    ).filter((heading) =>
-      Boolean(heading.textContent?.trim()),
-    ) as HTMLElement[];
+  // Clear error when dependencies change
+  React.useEffect(() => {
+    setError(null);
+  }, [containerId, selectors, rootMargin, threshold]);
 
-    // Auto-generate IDs for headings that don't have them
-    const processedIds = new Set<string>();
-    headingElements.forEach((heading) => {
-      if (!heading.id && autoGenerateIds) {
-        const baseSlug = generateSlug(heading.textContent || '');
-        let slug = baseSlug;
-        let counter = 1;
-
-        // Ensure unique ID
-        while (processedIds.has(slug) || document.getElementById(slug)) {
-          slug = `${baseSlug}-${counter}`;
-          counter++;
-        }
-
-        heading.id = slug;
-      }
-
-      if (heading.id) {
-        processedIds.add(heading.id);
-      }
-    });
-
-    // Filter out headings without IDs and duplicates
-    const validHeadings = headingElements.filter(
-      (heading) =>
-        heading.id &&
-        Array.from(processedIds).filter((id) => id === heading.id).length <= 1,
-    );
-
-    const toc = validHeadings.map((heading) => ({
-      id: heading.id,
-      level: parseInt(heading.tagName.substring(1)),
-      text: heading.textContent?.trim() || '',
-    }));
-
-    setHeadings(toc);
-    headingElementsRef.current = validHeadings;
-
-    // Cleanup previous observer
+  /**
+   * Cleanup function that disconnects observers and clears references
+   */
+  const cleanup = useStableCallback(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
+      observerRef.current = null;
     }
+    headingElementsRef.current = [];
+  });
 
-    if (validHeadings.length === 0) {
-      return;
-    }
+  // Handle hash changes for URL navigation
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      if (!mountedRef.current) return;
 
-    // Create new observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Create a map of visible entries with their intersection ratios
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .map((entry) => ({
-            id: entry.target.id,
-            ratio: entry.intersectionRatio,
-            boundingRect: entry.boundingClientRect,
-          }))
-          .sort((a, b) => b.ratio - a.ratio); // Sort by intersection ratio (most visible first)
-
-        if (visibleEntries.length > 0) {
-          // If we have a hash in URL, prioritize it
-          const hash = window.location.hash.replace('#', '');
-          if (hash && visibleEntries.some((entry) => entry.id === hash)) {
-            setActiveId(hash);
-          } else {
-            // Otherwise, use the most visible heading
-            const mostVisibleEntry = visibleEntries[0];
-            if (mostVisibleEntry?.id) {
-              setActiveId(mostVisibleEntry.id);
-            }
-          }
-        } else {
-          // If no headings are visible, find the closest one above the viewport
-          const allHeadings = headingElementsRef.current;
-          let closestHeading: (HTMLElement & { id: string }) | null = null;
-          let closestDistance = Infinity;
-
-          allHeadings.forEach((heading) => {
-            const rect = heading.getBoundingClientRect();
-            const distanceFromTop = Math.abs(rect.top);
-
-            if (rect.top <= 0 && distanceFromTop < closestDistance) {
-              closestDistance = distanceFromTop;
-              closestHeading = heading;
-            }
-          });
-
-          if (closestHeading) {
-            setActiveId((closestHeading as HTMLElement & { id: string }).id);
-          }
+      try {
+        const hash = window.location.hash.replace('#', '');
+        if (hash && hash !== lastActiveIdRef.current) {
+          setActiveId(hash);
+          lastActiveIdRef.current = hash;
         }
-      },
-      {
-        root: null,
-        rootMargin,
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0],
-      },
-    );
-
-    observerRef.current = observer;
-    validHeadings.forEach((element) => observer.observe(element));
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
+      } catch (err) {
+        handleError(err as Error, 'hashchange handler');
       }
     };
-  }, [containerId, rootMargin, threshold, selectors, autoGenerateIds]);
 
-  return [headings, activeId] as const;
+    // Initialize with current hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [handleError]);
+
+  // Update active ID when debounced value changes
+  React.useEffect(() => {
+    if (
+      debouncedActiveId !== null &&
+      debouncedActiveId !== lastActiveIdRef.current
+    ) {
+      setActiveId(debouncedActiveId);
+      lastActiveIdRef.current = debouncedActiveId;
+    }
+  }, [debouncedActiveId]);
+
+  // Main effect for scanning and observing headings
+  React.useEffect(() => {
+    setIsLoading(true);
+    cleanup();
+
+    /**
+     * Scans the document for headings and sets up intersection observers
+     */
+    const scanHeadings = async () => {
+      try {
+        // Validate selector
+        if (!selectors || typeof selectors !== 'string') {
+          throw new Error('Invalid selectors provided');
+        }
+
+        // Find container
+        const container = containerId
+          ? document.getElementById(containerId)
+          : document.body;
+
+        if (!container) {
+          throw new Error(`Container with id "${containerId}" not found`);
+        }
+
+        // Query headings with error handling for invalid selectors
+        let headingElements: HTMLElement[];
+        try {
+          const elements = container.querySelectorAll(selectors);
+          headingElements = Array.from(elements) as HTMLElement[];
+        } catch (selectorError) {
+          throw new Error(`Invalid CSS selector: "${selectors}"`);
+        }
+
+        // Filter valid headings and generate IDs if needed
+        const validHeadings: HTMLElement[] = [];
+        const generatedIds = new Set<string>();
+
+        headingElements.forEach((heading, index) => {
+          const textContent = heading.textContent?.trim();
+          if (!textContent) return;
+
+          // Generate ID if missing and generateIds is enabled
+          if (!heading.id && generateIds) {
+            const level = parseInt(heading.tagName.substring(1));
+            let generatedId = idGenerator(textContent, level, index);
+
+            // Ensure unique IDs
+            let counter = 1;
+            const baseId = generatedId;
+            while (
+              generatedIds.has(generatedId) ||
+              document.getElementById(generatedId)
+            ) {
+              generatedId = `${baseId}-${counter}`;
+              counter++;
+            }
+
+            heading.id = generatedId;
+            generatedIds.add(generatedId);
+          }
+
+          if (heading.id) {
+            validHeadings.push(heading);
+          }
+        });
+
+        if (validHeadings.length === 0) {
+          console.warn(
+            `No valid headings found with selector "${selectors}" in container "${containerId}"`,
+          );
+          setHeadings([]);
+          setIsLoading(false);
+          return;
+        }
+
+        // Create TOC data
+        const newHeadings = validHeadings.map((heading) => ({
+          id: heading.id,
+          level: parseInt(heading.tagName.substring(1)),
+          text: heading.textContent!.trim(),
+          element: heading,
+        }));
+
+        // Update state only if headings have changed
+        setHeadings((prevHeadings) => {
+          const hasChanged =
+            prevHeadings.length !== newHeadings.length ||
+            prevHeadings.some(
+              (prev, index) =>
+                prev.id !== newHeadings[index]?.id ||
+                prev.text !== newHeadings[index]?.text ||
+                prev.level !== newHeadings[index]?.level,
+            );
+
+          return hasChanged ? newHeadings : prevHeadings;
+        });
+
+        // Store reference for cleanup
+        headingElementsRef.current = validHeadings;
+
+        // Set up IntersectionObserver
+        if (validHeadings.length > 0 && 'IntersectionObserver' in window) {
+          observerRef.current = new IntersectionObserver(
+            (entries) => {
+              if (!mountedRef.current) return;
+
+              // Find the most relevant intersecting entry
+              const intersectingEntries = entries.filter(
+                (entry) => entry.isIntersecting,
+              );
+
+              if (intersectingEntries.length > 0) {
+                // Sort by intersection ratio and position
+                intersectingEntries.sort((a, b) => {
+                  const ratioA = a.intersectionRatio;
+                  const ratioB = b.intersectionRatio;
+
+                  if (Math.abs(ratioA - ratioB) < 0.01) {
+                    // If ratios are similar, prefer the one higher on the page
+                    return a.boundingClientRect.top - b.boundingClientRect.top;
+                  }
+
+                  return ratioB - ratioA; // Higher ratio first
+                });
+
+                const targetId = (
+                  intersectingEntries[0] as IntersectionObserverEntry
+                ).target.id;
+                if (targetId) {
+                  setInternalActiveId(targetId);
+                }
+              }
+            },
+            {
+              root: null,
+              rootMargin,
+              threshold: Array.isArray(threshold) ? threshold : [threshold],
+            },
+          );
+
+          // Observe all heading elements
+          validHeadings.forEach((element) => {
+            observerRef.current?.observe(element);
+          });
+        }
+      } catch (err) {
+        handleError(err as Error, 'scanning headings');
+      } finally {
+        if (mountedRef.current) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Use RAF to ensure DOM is ready
+    const rafId = requestAnimationFrame(scanHeadings);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      cleanup();
+    };
+  }, [
+    containerId,
+    selectors,
+    rootMargin,
+    threshold,
+    generateIds,
+    idGenerator,
+    handleError,
+  ]);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cleanup();
+    };
+  }, [cleanup]);
+
+  /**
+   * Programmatically set the active heading
+   */
+  const setActiveHeading = useStableCallback((id: string) => {
+    if (headings.find((h) => h.id === id)) {
+      setActiveId(id);
+      setInternalActiveId(id);
+      lastActiveIdRef.current = id;
+    }
+  });
+
+  /**
+   * Refresh the table of contents
+   */
+  const refresh = useStableCallback(() => {
+    setIsLoading(true);
+    setError(null);
+  });
+
+  /**
+   * Navigate to a specific heading
+   */
+  const navigateToHeading = useStableCallback(
+    (id: string, behavior: ScrollBehavior = 'smooth') => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior, block: 'start' });
+
+        // Update URL hash
+        if (window.history.replaceState) {
+          window.history.replaceState(null, '', `#${id}`);
+        } else {
+          window.location.hash = id;
+        }
+
+        setActiveHeading(id);
+
+        // Focus for accessibility
+        if (element.tabIndex === -1) {
+          element.tabIndex = -1;
+        }
+        element.focus({ preventScroll: true });
+      }
+    },
+  );
+
+  return {
+    headings,
+    activeId,
+    error,
+    isLoading,
+    setActiveHeading,
+    refresh,
+    navigateToHeading,
+  };
 };

@@ -1,18 +1,7 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { expect, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
 
-const mockIntersectionObserver = vi.fn();
-mockIntersectionObserver.mockReturnValue({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
+afterEach(() => {
+  cleanup();
 });
-window.IntersectionObserver = mockIntersectionObserver;
-
-const mockResizeObserver = vi.fn();
-mockResizeObserver.mockReturnValue({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-});
-window.ResizeObserver = mockResizeObserver;
