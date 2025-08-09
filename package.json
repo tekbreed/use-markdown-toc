@@ -9,13 +9,6 @@
   "files": [
     "dist"
   ],
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "default": "./dist/index.cjs"
-    },
-    "./package.json": "./package.json"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/christophersesugh/use-markdown-toc.git"
@@ -32,7 +25,7 @@
     "toc"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -57,7 +50,7 @@
     "jsdom": "^26.1.0",
     "prettier": "^3.5.3",
     "react-dom": "^19.1.0",
-    "tsup": "^8.5.0",
+    "tsdown": "^0.13.4",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
   },
